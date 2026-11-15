@@ -1,0 +1,98 @@
+# platform -> ingress -> traefik: the cluster ingress controller, LoadBalancer 192.168.86.10 (MetalLB).
+# Adopted from the Ansible `traefik` role's Helm release (same release name/namespace); values are what it rendered.
+# Second source: the traefik-config ConfigMap (file provider: default security-headers middleware).
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: traefik
+  namespace: argocd
+spec:
+  project: default
+  sources:
+    - repoURL: https://traefik.github.io/charts
+      chart: traefik
+      targetRevision: 37.0.0
+      helm:
+        releaseName: traefik
+        valuesObject:
+          additionalArguments:
+          - --providers.file.filename=/data/conf/traefik-config.yaml
+          - --serversTransport.insecureSkipVerify=true
+          dashboard:
+            enabled: true
+          deployment:
+            additionalContainers: []
+            annotations: {}
+            enabled: true
+            initContainers: null
+            podAnnotations: {}
+            replicas: 1
+          globalArguments:
+          - --global.sendanonymoususage=false
+          ingressRoute:
+            dashboard:
+              enabled: false
+          ports:
+            metrics:
+              expose:
+                default: false
+              exposedPort: 9100
+              port: 9100
+              protocol: TCP
+            traefik:
+              exposedPort: 9000
+              port: 9000
+              protocol: TCP
+            web:
+              expose:
+                default: true
+              exposedPort: 80
+              port: 8000
+              protocol: TCP
+            websecure:
+              expose:
+                default: true
+              exposedPort: 443
+              port: 8443
+              protocol: TCP
+              tls:
+                certResolver: ""
+                domains: []
+                enabled: true
+                options: ""
+          providers:
+            kubernetesCRD:
+              enabled: true
+              namespaces: []
+            kubernetesIngress:
+              enabled: true
+              namespaces: []
+              publishedService:
+                enabled: true
+          rbac:
+            enabled: true
+          service:
+            annotations: {}
+            enabled: true
+            externalIPs: []
+            labels: {}
+            loadBalancerSourceRanges: []
+            spec:
+              loadBalancerIP: 192.168.86.10
+            type: LoadBalancer
+          volumes:
+          - mountPath: /data/conf
+            name: traefik-config
+            type: configMap
+    - repoURL: https://github.com/dafywinf-homelab-platform/homelab-gitops.git
+      targetRevision: main
+      path: apps/platform/ingress/traefik-extras
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kube-system
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - ServerSideApply=true

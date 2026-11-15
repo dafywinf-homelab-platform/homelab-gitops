@@ -1,0 +1,31 @@
+# platform -> storage -> kube-storage: Longhorn + the local-path-mnt-data StorageClass (umbrella chart).
+# Adopted from the hand-run `helm upgrade kube-storage` release (same release name/namespace).
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kube-storage
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/dafywinf/kube-storage.git
+    targetRevision: main
+    path: .
+    helm:
+      releaseName: kube-storage
+      valueFiles:
+        - values.yaml
+      valuesObject:
+        longhorn:
+          # Longhorn's guidance for Argo CD: its pre-upgrade checker is a Helm hook that Argo would run on every sync
+          preUpgradeChecker:
+            jobEnabled: false
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kube-storage
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - ServerSideApply=true   # Longhorn CRDs are large

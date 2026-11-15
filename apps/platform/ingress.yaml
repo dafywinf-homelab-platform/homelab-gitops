@@ -1,0 +1,23 @@
+# platform -> ingress: app-of-apps for ingress (Traefik).
+# Each file in apps/platform/ingress/ is one Application.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: ingress
+  namespace: argocd
+  annotations:
+    # Sync wave -2: Traefik (CRDs, LoadBalancer 192.168.86.10) before anything that publishes a UI
+    argocd.argoproj.io/sync-wave: "-2"
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/dafywinf-homelab-platform/homelab-gitops.git
+    targetRevision: main
+    path: apps/platform/ingress
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

@@ -1,0 +1,23 @@
+# platform -> storage: app-of-apps for storage (Longhorn, local-path).
+# Each file in apps/platform/storage/ is one Application.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: storage
+  namespace: argocd
+  annotations:
+    # Sync wave -3: first: StorageClasses and the Longhorn CSI driver before anything requests a volume
+    argocd.argoproj.io/sync-wave: "-3"
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/dafywinf-homelab-platform/homelab-gitops.git
+    targetRevision: main
+    path: apps/platform/storage
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
