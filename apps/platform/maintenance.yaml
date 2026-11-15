@@ -1,0 +1,20 @@
+# platform -> maintenance: app-of-apps for node maintenance (kured).
+# Each file in apps/platform/maintenance/ is one Application.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: maintenance
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/dafywinf-homelab-platform/homelab-gitops.git
+    targetRevision: main
+    path: apps/platform/maintenance
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

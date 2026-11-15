@@ -1,0 +1,40 @@
+# platform -> maintenance -> kured: reboots nodes one at a time (drained) when unattended-upgrades leaves
+# /var/run/reboot-required, 03:00-05:00 Europe/London. Adopted from the Ansible `kured` role's Helm release.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kured
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://kubereboot.github.io/charts
+    chart: kured
+    targetRevision: 6.1.0
+    helm:
+      releaseName: kured
+      valuesObject:
+        configuration:
+          annotateNodes: true
+          concurrency: 1
+          drainTimeout: 15m
+          endTime: "05:00"
+          forceReboot: false
+          period: 10m
+          rebootSentinel: /var/run/reboot-required
+          startTime: "03:00"
+          timeZone: Europe/London
+        tolerations:
+        - effect: NoSchedule
+          key: node-role.kubernetes.io/master
+          operator: Exists
+        - effect: NoSchedule
+          key: node-role.kubernetes.io/control-plane
+          operator: Exists
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kube-system
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

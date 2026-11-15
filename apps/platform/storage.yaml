@@ -1,0 +1,20 @@
+# platform -> storage: app-of-apps for storage (Longhorn, local-path).
+# Each file in apps/platform/storage/ is one Application.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: storage
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/dafywinf-homelab-platform/homelab-gitops.git
+    targetRevision: main
+    path: apps/platform/storage
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
