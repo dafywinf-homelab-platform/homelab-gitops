@@ -1,0 +1,39 @@
+# platform -> monitoring -> kube-monitoring: Prometheus, Alertmanager, Grafana, node-exporter, kube-state-metrics.
+# Wrapper chart around kube-prometheus-stack; the release name and namespace match the original `helm install`,
+# so Argo CD adopted the existing resources rather than recreating them.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kube-monitoring
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/dafywinf-homelab-platform/kube-monitoring-chart.git
+    targetRevision: main
+    path: .
+    helm:
+      releaseName: kube-monitoring
+      valueFiles:
+        - values.yaml
+        - environments/homelab.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kube-monitoring
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true   # the Prometheus operator CRDs are too large for client-side apply
+  ignoreDifferences:
+    # The admission-webhook patch Job injects caBundle after install
+    - group: admissionregistration.k8s.io
+      kind: MutatingWebhookConfiguration
+      jqPathExpressions:
+        - .webhooks[]?.clientConfig.caBundle
+    - group: admissionregistration.k8s.io
+      kind: ValidatingWebhookConfiguration
+      jqPathExpressions:
+        - .webhooks[]?.clientConfig.caBundle
