@@ -29,6 +29,22 @@ subdirectory is the content of the app-of-apps with the same name.
 Deeper subdirectories (e.g. `ingress/traefik-extras/`) are not read by the group app; they are extra sources for one
 Application.
 
+## Sync order
+
+The group Applications under `platform` carry `argocd.argoproj.io/sync-wave` annotations, so on a fresh cluster (or a
+full resync) they come up in dependency order. Argo CD waits for each wave to be **Healthy** before the next one starts:
+
+| Wave | Group | Why |
+|---|---|---|
+| -3 | storage | StorageClasses and the Longhorn CSI driver before anything requests a volume |
+| -2 | ingress | Traefik (CRDs, LoadBalancer `192.168.86.10`) before anything that publishes a UI |
+| -1 | maintenance | kured |
+| 0 | monitoring | Uses ingress. New groups default to wave 0 as well |
+
+Waiting on the *health* of an Application needs Argo CD's Application health check, which Argo CD disabled by default in
+1.8. It is enabled in the `argocd` role's Helm values in `k3s-cluster-bootstrap`
+(`resource.customizations.health.argoproj.io_Application`). Without it, waves only order *creation*.
+
 ## Adding an app
 
 1. Add `apps/platform/<group>/<app>.yaml` (an `Application`).
