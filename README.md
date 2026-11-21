@@ -4,6 +4,8 @@ Desired state of the Proxmox K3s cluster, deployed by **Argo CD** using the app-
 
 ```
 platform                 root Application (created by Ansible, see below) -> apps/platform/
+├── ci                   apps/platform/ci.yaml
+│   └── jenkins          Jenkins chart 5.13.3 (LTS 2.580.2): Java builds in Maven/JDK 21 agent pods
 ├── ingress              apps/platform/ingress.yaml
 │   └── traefik          Traefik chart 37.0.0 (+ ingress/traefik-extras/: traefik-config ConfigMap), LB 192.168.86.10
 ├── maintenance          apps/platform/maintenance.yaml
@@ -40,6 +42,7 @@ full resync) they come up in dependency order. Argo CD waits for each wave to be
 | -2 | ingress | Traefik (CRDs, LoadBalancer `192.168.86.10`) before anything that publishes a UI |
 | -1 | maintenance | kured |
 | 0 | monitoring | Uses ingress. New groups default to wave 0 as well |
+| 1 | ci | Jenkins: a Longhorn volume and an ingress |
 
 Waiting on the *health* of an Application needs Argo CD's Application health check, which Argo CD disabled by default in
 1.8. It is enabled in the `argocd` role's Helm values in `k3s-cluster-bootstrap`
@@ -58,3 +61,8 @@ the release itself: `helm uninstall` would delete the resources.
 ## Access
 
 Argo CD UI: <https://argocd.192.168.86.10.sslip.io> (user `admin`, password in the `argocd-initial-admin-secret` secret).
+
+Jenkins: <https://jenkins.192-168-86-10.sslip.io> (user `admin`, password `jenkins_admin_password` in
+`k3s-cluster-bootstrap/secrets.yml`, put in the `jenkins/jenkins-admin` Secret by the `platform_secrets` role). Builds run
+in agent pods, never on the controller: use `agent { label 'maven' }` for Maven 3.9 + Temurin JDK 21 (`container('maven')`
+for the build steps). Two build pods at most at a time.

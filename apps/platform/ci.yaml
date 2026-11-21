@@ -1,0 +1,23 @@
+# platform -> ci: app-of-apps for build tooling (Jenkins).
+# Each file in apps/platform/ci/ is one Application.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: ci
+  namespace: argocd
+  annotations:
+    # Sync wave 1: Jenkins needs Longhorn (storage, -3) and Traefik (ingress, -2); it goes after the platform plumbing
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/dafywinf-homelab-platform/homelab-gitops.git
+    targetRevision: main
+    path: apps/platform/ci
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
