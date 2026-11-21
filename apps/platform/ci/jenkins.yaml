@@ -1,6 +1,7 @@
 # platform -> ci -> jenkins: Jenkins LTS controller (no executors) that builds Java applications in throwaway agent pods
 # (label `maven`: Maven 3.9 + Eclipse Temurin JDK 21) in the jenkins-agents namespace. UI at https://jenkins.192-168-86-10.sslip.io.
-# The admin login comes from Secret jenkins/jenkins-admin, created by the Ansible `platform_secrets` role.
+# The admin login comes from Secret jenkins/jenkins-admin, which the sealed-secrets controller creates from
+# jenkins-extras/jenkins-admin.sealedsecret.yaml (re-seal with `make seal-jenkins-admin`).
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -86,7 +87,7 @@ spec:
                     limits:
                       cpu: "2"
                       memory: 2Gi
-    # Second source: the jenkins-agents Namespace (build pods run there, see agent.namespace)
+    # Second source: the jenkins-agents Namespace (build pods run there, see agent.namespace) and the admin SealedSecret
     - repoURL: https://github.com/dafywinf-homelab-platform/homelab-gitops.git
       targetRevision: main
       path: apps/platform/ci/jenkins-extras
