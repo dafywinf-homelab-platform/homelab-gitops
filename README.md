@@ -14,6 +14,7 @@ platform                 root Application (created by Ansible, see below) -> app
 │   └── kured            kured chart 6.1.0: node reboots after OS patching, 03:00-05:00
 ├── monitoring           apps/platform/monitoring.yaml
 │   └── kube-monitoring  kube-monitoring-chart (kube-prometheus-stack)
+│                        (+ monitoring/kube-monitoring-extras/: grafana-admin SealedSecret)
 ├── secrets              apps/platform/secrets.yaml
 │   └── sealed-secrets   Sealed Secrets chart 2.22.0 (controller 0.41.2): decrypts SealedSecrets from this repo
 └── storage              apps/platform/storage.yaml
@@ -85,8 +86,12 @@ by Ansible or by hand.
 make seal NAMESPACE=my-app NAME=my-app-db KEYS='username password' OUT=apps/platform/<group>/<app>-extras/my-app-db.sealedsecret.yaml
 # Change the Jenkins admin login
 make seal-jenkins-admin
+# Change the Grafana admin login
+make seal-grafana-admin
 # then commit the file; Argo CD applies it and the controller updates the Secret within seconds
-# Jenkins reads its admin password only at startup: after the change is synced, kubectl -n jenkins rollout restart statefulset jenkins
+# Jenkins and Grafana read their admin login only at startup: after the change is synced, restart them
+#   kubectl -n jenkins rollout restart statefulset jenkins
+#   kubectl -n kube-monitoring rollout restart deployment kube-monitoring-grafana
 ```
 
 | File / place | What | In Git? |

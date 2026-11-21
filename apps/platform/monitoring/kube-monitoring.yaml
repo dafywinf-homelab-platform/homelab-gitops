@@ -1,6 +1,7 @@
 # platform -> monitoring -> kube-monitoring: Prometheus, Alertmanager, Grafana, node-exporter, kube-state-metrics.
 # Wrapper chart around kube-prometheus-stack; the release name and namespace match the original `helm install`,
 # so Argo CD adopted the existing resources rather than recreating them.
+# Grafana's admin login: kube-monitoring-extras/grafana-admin.sealedsecret.yaml (re-seal with `make seal-grafana-admin`).
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -8,15 +9,19 @@ metadata:
   namespace: argocd
 spec:
   project: default
-  source:
-    repoURL: https://github.com/dafywinf-homelab-platform/kube-monitoring-chart.git
-    targetRevision: main
-    path: .
-    helm:
-      releaseName: kube-monitoring
-      valueFiles:
-        - values.yaml
-        - environments/homelab.yaml
+  sources:
+    - repoURL: https://github.com/dafywinf-homelab-platform/kube-monitoring-chart.git
+      targetRevision: main
+      path: .
+      helm:
+        releaseName: kube-monitoring
+        valueFiles:
+          - values.yaml
+          - environments/homelab.yaml
+    # Second source: the Grafana admin SealedSecret (the chart reads Secret grafana-admin via admin.existingSecret)
+    - repoURL: https://github.com/dafywinf-homelab-platform/homelab-gitops.git
+      targetRevision: main
+      path: apps/platform/monitoring/kube-monitoring-extras
   destination:
     server: https://kubernetes.default.svc
     namespace: kube-monitoring

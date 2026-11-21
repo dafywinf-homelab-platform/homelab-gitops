@@ -2,11 +2,12 @@
 # committed (sealed-secrets/pub-cert.pem) and the private key is backed up outside Git, in ~/.homelab.
 SEALING_KEY_BACKUP ?= $(HOME)/.homelab/sealed-secrets-key.json
 
-.PHONY: help seal seal-jenkins-admin fetch-cert backup-sealing-key restore-sealing-key
+.PHONY: help seal seal-jenkins-admin seal-grafana-admin fetch-cert backup-sealing-key restore-sealing-key
 
 help:
 	@echo "make seal NAMESPACE=<ns> NAME=<secret> KEYS='<key> ...' OUT=<file>  seal a Secret (prompts for values)"
 	@echo "make seal-jenkins-admin   re-seal the Jenkins admin login"
+	@echo "make seal-grafana-admin   re-seal the Grafana admin login"
 	@echo "make fetch-cert           refresh sealed-secrets/pub-cert.pem from the cluster"
 	@echo "make backup-sealing-key   copy the controller's private key to $(SEALING_KEY_BACKUP)"
 	@echo "make restore-sealing-key  put that key back into a rebuilt cluster and restart the controller"
@@ -21,6 +22,12 @@ seal-jenkins-admin:
 		jenkins-admin-user jenkins-admin-password
 	@echo "After merging: Jenkins reads the admin password only at startup (JCasC), so run"
 	@echo "  kubectl -n jenkins rollout restart statefulset jenkins"
+
+seal-grafana-admin:
+	@scripts/seal-secret.sh kube-monitoring grafana-admin \
+		apps/platform/monitoring/kube-monitoring-extras/grafana-admin.sealedsecret.yaml admin-user admin-password
+	@echo "After merging: Grafana reads the admin login only at startup (its database is an emptyDir), so run"
+	@echo "  kubectl -n kube-monitoring rollout restart deployment kube-monitoring-grafana"
 
 fetch-cert:
 	kubeseal --fetch-cert > sealed-secrets/pub-cert.pem
