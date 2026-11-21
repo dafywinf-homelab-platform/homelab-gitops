@@ -88,7 +88,65 @@ spec:
                     limits:
                       cpu: "2"
                       memory: 2Gi
-    # Second source: the jenkins-agents Namespace (build pods run there, see agent.namespace) and the admin SealedSecret
+            # Maven plus a Docker daemon, for Testcontainers tests. A new pod (and an empty Docker) per build. The dind
+            # container is privileged, so these pods run in jenkins-docker (Pod Security privileged), not jenkins-agents
+            maven-docker:
+              podName: maven-docker
+              namespace: jenkins-docker
+              customJenkinsLabels:
+                - maven-docker
+              additionalContainers:
+                - sideContainerName: maven
+                  image:
+                    repository: maven
+                    tag: 3.9.16-eclipse-temurin-21
+                  command: sleep
+                  args: infinity
+                  resources:
+                    requests:
+                      cpu: 500m
+                      memory: 1Gi
+                    limits:
+                      cpu: "2"
+                      memory: 2Gi
+                # Test containers (Kafka, MongoDB, ...) run inside this container and count against its memory
+                - sideContainerName: dind
+                  image:
+                    repository: docker
+                    tag: 29.9.3-dind
+                  # Empty: keep the image's entrypoint, which starts dockerd (the chart requires the key)
+                  args: ""
+                  privileged: true
+                  resources:
+                    requests:
+                      cpu: 500m
+                      memory: 1Gi
+                    limits:
+                      cpu: "2"
+                      memory: 2560Mi
+              envVars:
+                # maven reaches the daemon over a socket in a shared emptyDir; dind's own entrypoint listens on the
+                # same unix:// DOCKER_HOST. Its TCP port needs client certificates only dind has
+                - name: DOCKER_HOST
+                  value: unix:///var/run/dind/docker.sock
+                # Docker 29 refuses API versions below 1.44 by default; Testcontainers before 1.21 asks for older ones
+                - name: DOCKER_MIN_API_VERSION
+                  value: "1.24"
+                # The pod is deleted after the build, so Testcontainers' cleanup container (Ryuk) isn't needed
+                - name: TESTCONTAINERS_RYUK_DISABLED
+                  value: "true"
+              volumes:
+                - type: EmptyDir
+                  mountPath: /var/run/dind
+                # Images and containers: a volume per build on the workers' /mnt/data disk (local-path), deleted with
+                # the pod. An emptyDir would fill the 30 GB root disk
+                - type: EphemeralVolume
+                  mountPath: /var/lib/docker
+                  accessModes: ReadWriteOnce
+                  requestsSize: 20Gi
+                  storageClassName: local-path
+    # Second source: the jenkins-agents and jenkins-docker Namespaces (build pods run there), the Role that lets Jenkins
+    # start pods in jenkins-docker, and the admin SealedSecret
     - repoURL: https://github.com/dafywinf-homelab-platform/homelab-gitops.git
       targetRevision: main
       path: apps/platform/ci/jenkins-extras

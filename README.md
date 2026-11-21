@@ -6,8 +6,8 @@ Desired state of the Proxmox K3s cluster, deployed by **Argo CD** using the app-
 platform                 root Application (created by Ansible, see below) -> apps/platform/
 ├── ci                   apps/platform/ci.yaml
 │   └── jenkins          Jenkins chart 5.13.3 (LTS 2.580.2): Java builds in Maven/JDK 21 agent pods
-│                        (+ ci/jenkins-extras/: jenkins-agents Namespace, where the build pods run, and the
-│                         jenkins-admin SealedSecret)
+│                        (+ ci/jenkins-extras/: the jenkins-agents and jenkins-docker Namespaces, where the
+│                         build pods run, Jenkins' Role in jenkins-docker, and the jenkins-admin SealedSecret)
 ├── ingress              apps/platform/ingress.yaml
 │   └── traefik          Traefik chart 37.0.0 (+ ingress/traefik-extras/: traefik-config ConfigMap), LB 192.168.86.10
 ├── maintenance          apps/platform/maintenance.yaml
@@ -71,8 +71,16 @@ Argo CD UI: <https://argocd.192.168.86.10.sslip.io> (user `admin`, password in t
 Jenkins: <https://jenkins.192-168-86-10.sslip.io> (user `admin`; read the password with
 `kubectl -n jenkins get secret jenkins-admin -o jsonpath='{.data.jenkins-admin-password}' | base64 -d`, change it with
 `make seal-jenkins-admin`). Builds run
-in agent pods in the `jenkins-agents` namespace (Pod Security `baseline`), never on the controller: use `agent { label 'maven' }` for Maven 3.9 + Temurin JDK 21 (`container('maven')`
-for the build steps). Two build pods at most at a time.
+in agent pods, never on the controller. Two build pods at most at a time.
+
+| Label | Containers | Namespace | Use for |
+|---|---|---|---|
+| `maven` | `maven` (Maven 3.9 + Temurin JDK 21) | `jenkins-agents` (Pod Security `baseline`) | Builds and tests that don't need Docker |
+| `maven-docker` | `maven` + `dind` (Docker 29, privileged) | `jenkins-docker` (Pod Security `privileged`) | Tests that use Testcontainers |
+
+Run build steps in `container('maven')`. In a `maven-docker` pod, Testcontainers finds the pod's own Docker daemon through
+`DOCKER_HOST` with no extra setup; every build starts with an empty Docker, so test images are downloaded each time.
+Privileged means root on the worker, which is why those pods have a namespace of their own.
 
 ## Secrets
 
