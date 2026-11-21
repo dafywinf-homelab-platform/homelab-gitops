@@ -22,6 +22,14 @@ spec:
           forceReboot: false
           period: 10m
           rebootSentinel: /var/run/reboot-required
+          # Also reboot when the running kernel is older than the newest installed one. With Ubuntu Pro Livepatch,
+          # Ubuntu's livepatch-aware policy does NOT create reboot-required for kernels Livepatch already covers, so
+          # new kernels would never go live. When set, the command replaces the file check, so it tests both. Exit 0 = reboot.
+          # The chart only passes the command when the sentinel host-path mount is off; kured then runs it in the
+          # host's namespaces (privileged, hostPID), so it sees the real /boot and /var/run.
+          useRebootSentinelHostPath: false
+          rebootSentinelCommand: >-
+            sh -c '[ -f /var/run/reboot-required ] || [ "$(uname -r)" != "$(ls -1 /boot/vmlinuz-*-generic | sed s#/boot/vmlinuz-## | sort -V | tail -1)" ]'
           startTime: "03:00"
           timeZone: Europe/London
         tolerations:
