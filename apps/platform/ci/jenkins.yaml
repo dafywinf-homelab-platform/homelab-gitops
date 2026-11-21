@@ -38,6 +38,7 @@ spec:
             # configuration-as-code)
             additionalPlugins:
               - github-branch-source:1988.v87ea_66346560
+              - junit:1458.1460.vd53b_087eeb_2c
               - pipeline-graph-view:1053.v9df19e6ceed2
               - timestamper:1.30
             ingress:
