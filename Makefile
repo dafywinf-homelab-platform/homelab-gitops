@@ -19,6 +19,8 @@ seal:
 seal-jenkins-admin:
 	@scripts/seal-secret.sh jenkins jenkins-admin apps/platform/ci/jenkins-extras/jenkins-admin.sealedsecret.yaml \
 		jenkins-admin-user jenkins-admin-password
+	@echo "After merging: Jenkins reads the admin password only at startup (JCasC), so run"
+	@echo "  kubectl -n jenkins rollout restart statefulset jenkins"
 
 fetch-cert:
 	kubeseal --fetch-cert > sealed-secrets/pub-cert.pem

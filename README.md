@@ -86,6 +86,7 @@ make seal NAMESPACE=my-app NAME=my-app-db KEYS='username password' OUT=apps/plat
 # Change the Jenkins admin login
 make seal-jenkins-admin
 # then commit the file; Argo CD applies it and the controller updates the Secret within seconds
+# Jenkins reads its admin password only at startup: after the change is synced, kubectl -n jenkins rollout restart statefulset jenkins
 ```
 
 | File / place | What | In Git? |
