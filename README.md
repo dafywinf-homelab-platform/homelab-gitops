@@ -6,13 +6,16 @@ Desired state of the Proxmox K3s cluster, deployed by **Argo CD** using the app-
 platform                 root Application (created by Ansible, see below) -> apps/platform/
 ├── ci                   apps/platform/ci.yaml
 │   └── jenkins          Jenkins chart 5.13.3 (LTS 2.580.2): Java builds in Maven/JDK 21 agent pods
-│                        (+ ci/jenkins-extras/: jenkins-agents Namespace, where the build pods run)
+│                        (+ ci/jenkins-extras/: jenkins-agents Namespace, where the build pods run, and the
+│                         jenkins-admin SealedSecret)
 ├── ingress              apps/platform/ingress.yaml
 │   └── traefik          Traefik chart 37.0.0 (+ ingress/traefik-extras/: traefik-config ConfigMap), LB 192.168.86.10
 ├── maintenance          apps/platform/maintenance.yaml
 │   └── kured            kured chart 6.1.0: node reboots after OS patching, 03:00-05:00
 ├── monitoring           apps/platform/monitoring.yaml
 │   └── kube-monitoring  kube-monitoring-chart (kube-prometheus-stack)
+├── secrets              apps/platform/secrets.yaml
+│   └── sealed-secrets   Sealed Secrets chart 2.22.0 (controller 0.41.2): decrypts SealedSecrets from this repo
 └── storage              apps/platform/storage.yaml
     └── kube-storage     kube-storage chart (Longhorn 1.12.2 + local-path-mnt-data StorageClass)
 ```
@@ -39,6 +42,7 @@ full resync) they come up in dependency order. Argo CD waits for each wave to be
 
 | Wave | Group | Why |
 |---|---|---|
+| -4 | secrets | The SealedSecret CRD and controller before any app ships a SealedSecret |
 | -3 | storage | StorageClasses and the Longhorn CSI driver before anything requests a volume |
 | -2 | ingress | Traefik (CRDs, LoadBalancer `192.168.86.10`) before anything that publishes a UI |
 | -1 | maintenance | kured |
@@ -63,7 +67,38 @@ the release itself: `helm uninstall` would delete the resources.
 
 Argo CD UI: <https://argocd.192.168.86.10.sslip.io> (user `admin`, password in the `argocd-initial-admin-secret` secret).
 
-Jenkins: <https://jenkins.192-168-86-10.sslip.io> (user `admin`, password `jenkins_admin_password` in
-`k3s-cluster-bootstrap/secrets.yml`, put in the `jenkins/jenkins-admin` Secret by the `platform_secrets` role). Builds run
+Jenkins: <https://jenkins.192-168-86-10.sslip.io> (user `admin`; read the password with
+`kubectl -n jenkins get secret jenkins-admin -o jsonpath='{.data.jenkins-admin-password}' | base64 -d`, change it with
+`make seal-jenkins-admin`). Builds run
 in agent pods in the `jenkins-agents` namespace (Pod Security `baseline`), never on the controller: use `agent { label 'maven' }` for Maven 3.9 + Temurin JDK 21 (`container('maven')`
 for the build steps). Two build pods at most at a time.
+
+## Secrets
+
+Secrets live in this repo as **SealedSecrets**: encrypted with the cluster's public key, so they are safe to commit to
+this public repo. Only the sealed-secrets controller in the cluster holds the private key; it turns each SealedSecret
+into a normal Secret, which the app reads. Argo CD applies SealedSecrets like any other manifest. Nothing is created
+by Ansible or by hand.
+
+```sh
+# Seal a new secret (prompts for each value; nothing lands in shell history)
+make seal NAMESPACE=my-app NAME=my-app-db KEYS='username password' OUT=apps/platform/<group>/<app>-extras/my-app-db.sealedsecret.yaml
+# Change the Jenkins admin login
+make seal-jenkins-admin
+# then commit the file; Argo CD applies it and the controller updates the Secret within seconds
+```
+
+| File / place | What | In Git? |
+|---|---|---|
+| `sealed-secrets/pub-cert.pem` | Public certificate. `kubeseal` encrypts with it (no cluster connection needed) | Yes, it is public by design |
+| `*.sealedsecret.yaml` | Encrypted secrets | Yes |
+| `~/.homelab/sealed-secrets-key.json` | **Private key** backup (`make backup-sealing-key`), mode 600, FileVault | **Never** |
+
+* Needs `kubeseal` (0.41.2, matching the controller) and `jq`.
+* A SealedSecret only decrypts under its own name and namespace (strict scope): copying it elsewhere doesn't work.
+* The controller owns the Secrets it creates. Edit the SealedSecret, never the Secret.
+* **Rebuilding the cluster:** after Argo CD has installed the controller, run `make restore-sealing-key` (applies the
+  backup and restarts the controller). Without the backup, re-seal every secret with the new key (`make fetch-cert`,
+  then `make seal…`).
+
+Design, flows and the reasoning: homelab-architecture `docs/09-secrets.md` and ADR-010.
