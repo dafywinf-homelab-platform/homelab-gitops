@@ -1,0 +1,10 @@
+# Jenkins build pods (agent.namespace in ../jenkins.yaml). Kept apart from the controller's namespace so a pipeline
+# can't mount jenkins/jenkins-admin. Pod Security "baseline" refuses privileged pods, host paths and host networking,
+# so a build can't reach into the node either.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: jenkins-agents
+  labels:
+    pod-security.kubernetes.io/enforce: baseline
+    pod-security.kubernetes.io/enforce-version: latest
