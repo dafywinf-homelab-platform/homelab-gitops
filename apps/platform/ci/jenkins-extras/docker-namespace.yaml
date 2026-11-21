@@ -1,0 +1,10 @@
+# Build pods that need a Docker daemon (label `maven-docker` in ../jenkins.yaml): Testcontainers tests run against a
+# Docker-in-Docker sidecar, which must be privileged. Privileged means root on the worker, so it gets its own namespace
+# instead of loosening jenkins-agents. Holds no Secrets; only Jenkins can create pods here (docker-rbac.yaml).
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: jenkins-docker
+  labels:
+    pod-security.kubernetes.io/enforce: privileged
+    pod-security.kubernetes.io/enforce-version: latest
