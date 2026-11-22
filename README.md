@@ -5,7 +5,7 @@ Desired state of the Proxmox K3s cluster, deployed by **Argo CD** using the app-
 ```
 platform                 root Application (created by Ansible, see below) -> apps/platform/
 ├── ci                   apps/platform/ci.yaml
-│   └── jenkins          Jenkins chart 5.13.3 (LTS 2.580.2): Java builds in Maven/JDK 21 agent pods
+│   └── jenkins          Jenkins chart 5.13.3 (LTS 2.580.2): Java builds in Maven/JDK 25 agent pods
 │                        (+ ci/jenkins-extras/: the jenkins-agents and jenkins-docker Namespaces, where the
 │                         build pods run, Jenkins' Role in jenkins-docker, and the jenkins-admin SealedSecret)
 ├── ingress              apps/platform/ingress.yaml
@@ -75,7 +75,7 @@ in agent pods, never on the controller. Two build pods at most at a time.
 
 | Label | Containers | Namespace | Use for |
 |---|---|---|---|
-| `maven` | `maven` (Maven 3.9 + Temurin JDK 21) | `jenkins-agents` (Pod Security `baseline`) | Builds and tests that don't need Docker |
+| `maven` | `maven` (Maven 3.10 + Temurin JDK 25) | `jenkins-agents` (Pod Security `baseline`) | Builds and tests that don't need Docker |
 | `maven-docker` | `maven` + `dind` (Docker 29, privileged) | `jenkins-docker` (Pod Security `privileged`) | Tests that use Testcontainers |
 
 Run build steps in `container('maven')`. In a `maven-docker` pod, Testcontainers finds the pod's own Docker daemon through

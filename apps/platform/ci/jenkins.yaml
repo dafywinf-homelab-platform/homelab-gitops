@@ -1,5 +1,5 @@
 # platform -> ci -> jenkins: Jenkins LTS controller (no executors) that builds Java applications in throwaway agent pods
-# (label `maven`: Maven 3.9 + Eclipse Temurin JDK 21) in the jenkins-agents namespace. UI at https://jenkins.192-168-86-10.sslip.io.
+# (label `maven`: Maven 3.10 + Eclipse Temurin JDK 25) in the jenkins-agents namespace. UI at https://jenkins.192-168-86-10.sslip.io.
 # The admin login comes from Secret jenkins/jenkins-admin, which the sealed-secrets controller creates from
 # jenkins-extras/jenkins-admin.sealedsecret.yaml (re-seal with `make seal-jenkins-admin`).
 apiVersion: argoproj.io/v1alpha1
@@ -78,7 +78,7 @@ spec:
                 - sideContainerName: maven
                   image:
                     repository: maven
-                    tag: 3.9.16-eclipse-temurin-21
+                    tag: 3.10.0-eclipse-temurin-25
                   command: sleep
                   args: infinity
                   resources:
@@ -99,7 +99,7 @@ spec:
                 - sideContainerName: maven
                   image:
                     repository: maven
-                    tag: 3.9.16-eclipse-temurin-21
+                    tag: 3.10.0-eclipse-temurin-25
                   command: sleep
                   args: infinity
                   resources:
