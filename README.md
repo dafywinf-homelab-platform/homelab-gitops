@@ -5,7 +5,8 @@ Desired state of the Proxmox K3s cluster, deployed by **Argo CD** using the app-
 ```
 platform                 root Application (created by Ansible, see below) -> apps/platform/
 ├── ci                   apps/platform/ci.yaml
-│   └── jenkins          Jenkins chart 5.13.3 (LTS 2.580.2): Java builds in Maven/JDK 25 agent pods
+│   └── jenkins          Jenkins chart 5.13.3 (LTS 2.580.2): Java builds in Maven/JDK 25 agent pods.
+│                        Parked (controller.replicas: 0) until the RAM upgrade, to make room for SIT
 │                        (+ ci/jenkins-extras/: the jenkins-agents and jenkins-docker Namespaces, where the
 │                         build pods run, Jenkins' Role in jenkins-docker, and the jenkins-admin SealedSecret)
 ├── environments         apps/platform/environments.yaml
