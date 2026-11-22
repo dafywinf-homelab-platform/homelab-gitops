@@ -17,6 +17,9 @@ spec:
         releaseName: jenkins
         valuesObject:
           controller:
+            # Parked: 0 stops the controller and frees ~1 GiB on the workers for the ddd-microservices-lab SIT environment
+            # until the RAM upgrade. Its data stays on the Longhorn volume; set back to 1 to start Jenkins again
+            replicas: 0
             # Builds never run on the controller, only in agent pods
             numExecutors: 0
             # Helm test hooks are not run by Argo CD
