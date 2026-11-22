@@ -1,9 +1,9 @@
 # platform -> environments -> ddd-microservices-lab-sit: the SIT environment of ddd-microservices-lab, defined in
 # its own repo (ddd-microservices-lab-deploy: chart, values, MongoDB, Redpanda, and the child Applications).
 #
-# No automatic sync: SIT needs ~1.75 GiB of memory requests, more than the workers have free until the RAM upgrade.
-# Sync this Application once in Argo CD to switch SIT on; it creates the child Applications, which then sync
-# automatically, so every release Renovate merges into ddd-microservices-lab-deploy is deployed.
+# Synced automatically: it creates the child Applications (infra, order-service, inventory-service), which sync
+# automatically too, so every release Renovate merges into ddd-microservices-lab-deploy is deployed.
+# SIT needs ~1.75 GiB of memory requests (~1.3 GiB in use); until the RAM upgrade it runs while Jenkins is parked.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -18,3 +18,7 @@ spec:
   destination:
     server: https://kubernetes.default.svc
     namespace: argocd
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

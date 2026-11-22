@@ -10,8 +10,8 @@ platform                 root Application (created by Ansible, see below) -> app
 │                        (+ ci/jenkins-extras/: the jenkins-agents and jenkins-docker Namespaces, where the
 │                         build pods run, Jenkins' Role in jenkins-docker, and the jenkins-admin SealedSecret)
 ├── environments         apps/platform/environments.yaml
-│   └── ddd-microservices-lab-sit   SIT of ddd-microservices-lab, from repo ddd-microservices-lab-deploy (no automatic
-│                        sync: sync once to switch SIT on; its child Applications then sync automatically)
+│   └── ddd-microservices-lab-sit   SIT of ddd-microservices-lab, from repo ddd-microservices-lab-deploy (app-of-apps;
+│                        it and its child Applications sync automatically)
 ├── ingress              apps/platform/ingress.yaml
 │   └── traefik          Traefik chart 37.0.0 (+ ingress/traefik-extras/: traefik-config ConfigMap), LB 192.168.86.10
 ├── maintenance          apps/platform/maintenance.yaml
