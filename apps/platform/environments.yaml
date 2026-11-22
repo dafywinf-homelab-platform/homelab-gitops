@@ -1,0 +1,23 @@
+# platform -> environments: app-of-apps for application environments (SIT and any later ones).
+# Each file in apps/platform/environments/ is one environment's Application.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: environments
+  namespace: argocd
+  annotations:
+    # Sync wave 2: applications go after the platform they run on (storage -3, ingress -2, CI 1)
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/dafywinf-homelab-platform/homelab-gitops.git
+    targetRevision: main
+    path: apps/platform/environments
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

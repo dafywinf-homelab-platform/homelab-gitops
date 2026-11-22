@@ -1,0 +1,20 @@
+# platform -> environments -> ddd-microservices-lab-sit: the SIT environment of ddd-microservices-lab, defined in
+# its own repo (ddd-microservices-lab-deploy: chart, values, MongoDB, Redpanda, and the child Applications).
+#
+# No automatic sync: SIT needs ~1.75 GiB of memory requests, more than the workers have free until the RAM upgrade.
+# Sync this Application once in Argo CD to switch SIT on; it creates the child Applications, which then sync
+# automatically, so every release Renovate merges into ddd-microservices-lab-deploy is deployed.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: ddd-microservices-lab-sit
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/dafywinf-homelab-platform/ddd-microservices-lab-deploy.git
+    targetRevision: main
+    path: argocd/sit
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
